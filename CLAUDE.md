@@ -1,0 +1,4 @@
+- Always run the app in port 3005, if there is a task running on this port, kill it and run the web app
+- Always run the API in port 3006, if there is a task running on this port, kill it and run the API
+- After a task is finish, kill all task and rebuild the app for fresh caching and web app and API
+- For every html element created on page, make sure to add ID Tag for easier identification for modification.

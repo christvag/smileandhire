@@ -1,0 +1,23 @@
+{
+  "name": "@worky-happy/database",
+  "version": "1.0.0",
+  "description": "Database package with Prisma ORM",
+  "main": "index.js",
+  "scripts": {
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:seed": "tsx seed.ts",
+    "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset --force",
+    "db:deploy": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.4",
+    "prisma": "^5.22.0",
+    "tsx": "^3.14.0"
+  }
+}

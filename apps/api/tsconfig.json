@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": false,
+    "useUnknownInCatchVariables": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "include": ["src/api-with-db.ts", "src/db/**/*", "src/utils/**/*", "src/middleware/**/*", "src/routes/**/*"],
+  "exclude": ["node_modules", "dist", "src/postgres-api.ts", "src/index-with-postgres.ts", "src/simple-index.ts", "src/hybrid-api.ts"]
+}

@@ -1,0 +1,440 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  // extensions = [pgvector] // Available but Prisma has issues detecting it
+}
+
+enum UserRole {
+  ADMIN
+  CLIENT
+  APPLICANT
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  SHORTLISTED
+  INTERVIEW
+  HIRED
+  REJECTED
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  EXPIRED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  FREELANCE
+  INTERNSHIP
+  REMOTE
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          UserRole  @default(APPLICANT)
+  isVerified    Boolean   @default(false)
+  isBanned      Boolean   @default(false)
+  banReason     String?
+  strikeCount   Int       @default(0)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Profile data
+  firstName     String?
+  lastName      String?
+  avatar        String?
+  phone         String?
+  username      String?   @unique
+
+  // NextAuth relations
+  accounts      Account[]
+  sessions      Session[]
+
+  // Relations
+  applicant     Applicant?
+  company       Company?
+  admin         Admin?
+  applications  Application[]
+  sentMessages  Message[]     @relation("SentMessages")
+  ratings       Rating[]
+  reports       Report[]      @relation("UserReports")
+  reportedBy    Report[]      @relation("ReportedUser")
+
+  @@map("users")
+}
+
+model Applicant {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  headline     String?
+  location     String?
+  summary      String?
+  availability String?
+  salaryMin    Int?
+  salaryMax    Int?
+  resumeUrl    String?
+  profileScore String?   // A, B, C, D rating
+  completionPercentage Int @default(0)
+  aiSummary    String?
+  // embedding    Unsupported("vector(1536)")? // pgvector available but disabled in Prisma
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experiences  Experience[]
+  educations   Education[]
+  skills       ApplicantSkill[]
+  applications Application[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("applicants")
+}
+
+model Admin {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  permissions     String[]  // Array of permissions like ["MANAGE_USERS", "MANAGE_JOBS", "VIEW_ANALYTICS"]
+  department      String?   // "HR", "IT", "MANAGEMENT", etc.
+  accessLevel     Int       @default(1) // 1-5 access levels
+  lastLoginAt     DateTime?
+  isActive        Boolean   @default(true)
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("admins")
+}
+
+model Experience {
+  id          String    @id @default(cuid())
+  applicantId String
+  title       String
+  company     String
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  description String?
+  highlights  String[]
+
+  applicant   Applicant @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("experiences")
+}
+
+model Education {
+  id          String    @id @default(cuid())
+  applicantId String
+  institution String
+  degree      String
+  fieldOfStudy String?
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  gpa         Float?
+  description String?
+
+  applicant   Applicant @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("educations")
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String?
+  description String?
+
+  applicants  ApplicantSkill[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("skills")
+}
+
+model ApplicantSkill {
+  id          String @id @default(cuid())
+  applicantId String
+  skillId     String
+  level       Int    @default(1) // 1-5 proficiency level
+  yearsOfExperience Int?
+
+  applicant   Applicant @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  skill       Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([applicantId, skillId])
+  @@map("applicant_skills")
+}
+
+model Company {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  name         String
+  username     String?   @unique
+  description  String?
+  industry     String?
+  size         String?   // "1-10", "11-50", "51-200", etc.
+  foundedDate  DateTime?
+  location     String?
+  website      String?
+  logo         String?
+  rating       Float?    @default(0)
+  ratingCount  Int       @default(0)
+
+  // Relations
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobs         Job[]
+  ratings      Rating[]
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("companies")
+}
+
+model Job {
+  id           String        @id @default(cuid())
+  companyId    String
+  title        String
+  description  String
+  requirements String?
+  salaryMin    Int?
+  salaryMax    Int?
+  location     String?
+  employmentType EmploymentType @default(FULL_TIME)
+  category     String?
+  tags         String[]
+  status       JobStatus     @default(DRAFT)
+  expiresAt    DateTime?
+  isRemote     Boolean       @default(false)
+  isUrgent     Boolean       @default(false)
+  viewCount    Int           @default(0)
+
+  // Relations
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  applications Application[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("jobs")
+}
+
+model Application {
+  id           String            @id @default(cuid())
+  jobId        String
+  applicantId  String
+  userId       String
+  status       ApplicationStatus @default(PENDING)
+  coverLetter  String?
+  resumeUrl    String?
+  evaluationScore Float?
+  appliedAt    DateTime          @default(now())
+  reviewedAt   DateTime?
+  notes        String?
+
+  // Relations
+  job          Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicant    Applicant @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([jobId, applicantId])
+  @@map("applications")
+}
+
+model Conversation {
+  id           String      @id @default(cuid())
+  participantIds String[] // Array of user IDs
+  lastMessageId String?
+  lastMessageAt DateTime   @default(now())
+  isActive     Boolean     @default(true)
+  applicationId String?    // Optional link to application
+  
+  // Relations
+  messages     Message[]
+  application  Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  messageType    String      @default("text") // text, file, image
+  isRead         Boolean     @default(false)
+  fileUrl        String?
+  replyToId      String?     // For threaded messages
+  isDeleted      Boolean     @default(false)
+  deletedAt      DateTime?
+
+  // Relations
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User        @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo        Message?    @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies        Message[]   @relation("MessageReplies")
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@map("messages")
+}
+
+model Rating {
+  id         String   @id @default(cuid())
+  userId     String
+  companyId  String?
+  targetUserId String? // For rating applicants
+  rating     Float    // 1-5 stars
+  review     String?
+  category   String?  // "interview_process", "communication", "work_environment"
+  isAnonymous Boolean @default(false)
+
+  // Relations
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company    Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("ratings")
+}
+
+model Report {
+  id           String       @id @default(cuid())
+  reporterId   String
+  reportedUserId String
+  reason       String
+  description  String?
+  status       ReportStatus @default(PENDING)
+  adminNotes   String?
+  resolvedAt   DateTime?
+
+  // Relations
+  reporter     User         @relation("UserReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User         @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@map("reports")
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  title      String
+  message    String
+  type       String   // "application", "message", "rating", "system"
+  isRead     Boolean  @default(false)
+  metadata   Json?    // Additional data like application ID, etc.
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String   // "CREATE", "UPDATE", "DELETE"
+  entity     String   // "User", "Job", "Application"
+  entityId   String
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+  userAgent  String?
+
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+// NextAuth.js models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verificationtokens")
+}
