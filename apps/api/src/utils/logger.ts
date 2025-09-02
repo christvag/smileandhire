@@ -7,7 +7,7 @@ const logger = winston.createLogger({
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
-  defaultMeta: { service: 'worky-happy-api' },
+  defaultMeta: { service: 'smile-and-hire-api' },
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(

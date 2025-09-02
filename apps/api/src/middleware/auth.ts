@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@worky-happy/database';
+// import { prisma } from '@worky-happy/database';
 import { logger } from '../utils/logger';
 
 interface JwtPayload {
@@ -35,28 +35,28 @@ export const authenticateToken = async (
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
     
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { id: true, role: true, email: true, isBanned: true, isVerified: true }
-    });
+    // const user = await prisma.user.findUnique({
+    //   where: { id: decoded.userId },
+    //   select: { id: true, role: true, email: true, isBanned: true, isVerified: true }
+    // });
 
-    if (!user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
+    // if (!user) {
+    //   return res.status(401).json({ error: 'User not found' });
+    // }
 
-    if (user.isBanned) {
-      return res.status(403).json({ error: 'Account has been banned' });
-    }
+    // if (user.isBanned) {
+    //   return res.status(403).json({ error: 'Account has been banned' });
+    // }
 
-    if (!user.isVerified) {
-      return res.status(403).json({ error: 'Account not verified' });
-    }
+    // if (!user.isVerified) {
+    //   return res.status(403).json({ error: 'Account not verified' });
+    // }
 
-    req.user = {
-      id: user.id,
-      role: user.role,
-      email: user.email,
-    };
+    // req.user = {
+    //   id: user.id,
+    //   role: user.role,
+    //   email: user.email,
+    // };
 
     next();
   } catch (error) {

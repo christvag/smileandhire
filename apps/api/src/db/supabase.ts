@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { customAlphabet } from 'nanoid';
+// import { customAlphabet } from 'nanoid';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -20,11 +20,11 @@ if (!supabaseUrl || !supabaseServiceKey) {
 export const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // ID generator
-const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10);
+// const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10);
 
-export const generateId = (prefix: string) => {
-  return `${prefix}_${nanoid()}`;
-};
+// export const generateId = (prefix: string) => {
+//   return `${prefix}_${nanoid()}`;
+// };
 
 // Test connection
 export const testConnection = async (): Promise<boolean> => {

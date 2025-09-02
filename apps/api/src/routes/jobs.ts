@@ -1,6 +1,6 @@
 import express from 'express';
 import { z } from 'zod';
-import { prisma } from '@worky-happy/database';
+// import { prisma } from '@worky-happy/database';
 import { authenticateToken, authorize } from '../middleware/auth';
 import { logger } from '../utils/logger';
 
@@ -64,42 +64,42 @@ router.get('/', async (req, res) => {
       where.salaryMax = { lte: parseInt(salaryMax as string) };
     }
 
-    const [jobs, total] = await Promise.all([
-      prisma.job.findMany({
-        where,
-        include: {
-          company: {
-            select: {
-              id: true,
-              name: true,
-              logo: true,
-              rating: true,
-              location: true
-            }
-          },
-          _count: {
-            select: {
-              applications: true
-            }
-          }
-        },
-        orderBy: [
-          { isUrgent: 'desc' },
-          { createdAt: 'desc' }
-        ],
-        skip: offset,
-        take: limitNum,
-      }),
-      prisma.job.count({ where })
-    ]);
+    // const [jobs, total] = await Promise.all([
+    //   prisma.job.findMany({
+    //     where,
+    //     include: {
+    //       company: {
+    //         select: {
+    //           id: true,
+    //           name: true,
+    //           logo: true,
+    //           rating: true,
+    //           location: true
+    //         }
+    //       },
+    //       _count: {
+    //         select: {
+    //           applications: true
+    //         }
+    //       }
+    //     },
+    //     orderBy: [
+    //       { isUrgent: 'desc' },
+    //       { createdAt: 'desc' }
+    //     ],
+    //     skip: offset,
+    //     take: limitNum,
+    //   }),
+    //   prisma.job.count({ where })
+    // ]);
 
     res.json({
-      jobs,
+      // jobs,
       pagination: {
         page: pageNum,
         limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum)
+        // total,
+        // pages: Math.ceil(total / limitNum)
       }
     });
   } catch (error) {
@@ -109,49 +109,49 @@ router.get('/', async (req, res) => {
 });
 
 // Get job by ID (public)
-router.get('/:id', async (req, res) => {
-  try {
-    const job = await prisma.job.findUnique({
-      where: { id: req.params.id },
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            logo: true,
-            rating: true,
-            ratingCount: true,
-            location: true,
-            website: true,
-            industry: true,
-            size: true
-          }
-        },
-        _count: {
-          select: {
-            applications: true
-          }
-        }
-      }
-    });
+// router.get('/:id', async (req, res) => {
+//   try {
+//     const job = await prisma.job.findUnique({
+//       where: { id: req.params.id },
+//       include: {
+//         company: {
+//           select: {
+//             id: true,
+//             name: true,
+//             description: true,
+//             logo: true,
+//             rating: true,
+//             ratingCount: true,
+//             location: true,
+//             website: true,
+//             industry: true,
+//             size: true
+//           }
+//         },
+//         _count: {
+//           select: {
+//             applications: true
+//           }
+//         }
+//       }
+//     });
 
-    if (!job) {
-      return res.status(404).json({ error: 'Job not found' });
-    }
+//     if (!job) {
+//       return res.status(404).json({ error: 'Job not found' });
+//     }
 
-    // Increment view count
-    await prisma.job.update({
-      where: { id: req.params.id },
-      data: { viewCount: { increment: 1 } }
-    });
+//     // Increment view count
+//     await prisma.job.update({
+//       where: { id: req.params.id },
+//       data: { viewCount: { increment: 1 } }
+//     });
 
-    res.json({ job });
-  } catch (error) {
-    logger.error('Get job error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+//     res.json({ job });
+//   } catch (error) {
+//     logger.error('Get job error:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
 
 const createJobSchema = z.object({
   title: z.string().min(3).max(100),
@@ -169,60 +169,60 @@ const createJobSchema = z.object({
 });
 
 // Create job (CLIENT only)
-router.post('/', authenticateToken, authorize(['CLIENT', 'ADMIN']), async (req, res) => {
-  try {
-    const validatedData = createJobSchema.parse(req.body);
+// router.post('/', authenticateToken, authorize(['CLIENT', 'ADMIN']), async (req, res) => {
+//   try {
+//     const validatedData = createJobSchema.parse(req.body);
 
-    // Get user's company
-    const company = await prisma.company.findUnique({
-      where: { userId: req.user!.id }
-    });
+//     // Get user's company
+//     const company = await prisma.company.findUnique({
+//       where: { userId: req.user!.id }
+//     });
 
-    if (!company) {
-      return res.status(404).json({ error: 'Company profile not found' });
-    }
+//     if (!company) {
+//       return res.status(404).json({ error: 'Company profile not found' });
+//     }
 
-    const job = await prisma.job.create({
-      data: {
-        title: validatedData.title,
-        description: validatedData.description,
-        requirements: validatedData.requirements,
-        salaryMin: validatedData.salaryMin,
-        salaryMax: validatedData.salaryMax,
-        location: validatedData.location,
-        employmentType: validatedData.employmentType,
-        category: validatedData.category,
-        tags: validatedData.tags,
-        isRemote: validatedData.isRemote,
-        isUrgent: validatedData.isUrgent,
-        company: {
-          connect: { id: company.id }
-        },
-        expiresAt: validatedData.expiresAt 
-          ? new Date(validatedData.expiresAt)
-          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days default
-      },
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-            logo: true
-          }
-        }
-      }
-    });
+//     const job = await prisma.job.create({
+//       data: {
+//         title: validatedData.title,
+//         description: validatedData.description,
+//         requirements: validatedData.requirements,
+//         salaryMin: validatedData.salaryMin,
+//         salaryMax: validatedData.salaryMax,
+//         location: validatedData.location,
+//         employmentType: validatedData.employmentType,
+//         category: validatedData.category,
+//         tags: validatedData.tags,
+//         isRemote: validatedData.isRemote,
+//         isUrgent: validatedData.isUrgent,
+//         company: {
+//           connect: { id: company.id }
+//         },
+//         expiresAt: validatedData.expiresAt 
+//           ? new Date(validatedData.expiresAt)
+//           : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days default
+//       },
+//       include: {
+//         company: {
+//           select: {
+//             id: true,
+//             name: true,
+//             logo: true
+//           }
+//         }
+//       }
+//     });
 
-    logger.info(`New job created: ${job.title} by company ${company.name}`);
+//     logger.info(`New job created: ${job.title} by company ${company.name}`);
 
-    res.status(201).json({ job });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: 'Invalid input data', details: error.errors });
-    }
-    logger.error('Create job error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+//     res.status(201).json({ job });
+//   } catch (error) {
+//     if (error instanceof z.ZodError) {
+//       return res.status(400).json({ error: 'Invalid input data', details: error.errors });
+//     }
+//     logger.error('Create job error:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
 
 export { router as jobsRouter };

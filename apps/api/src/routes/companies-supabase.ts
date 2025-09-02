@@ -1,6 +1,7 @@
 import express from 'express';
-import { supabase, handleSupabaseError, generateId } from '../db/supabase';
+import { supabase, handleSupabaseError } from '../db/supabase';
 import { logger } from '../utils/logger';
+import { generateId } from '../utils/auth';
 
 const router = express.Router();
 

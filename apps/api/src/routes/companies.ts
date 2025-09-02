@@ -1,5 +1,5 @@
 import express from 'express';
-import { prisma } from '@worky-happy/database';
+// import { prisma } from '@worky-happy/database';
 import { logger } from '../utils/logger';
 
 const router = express.Router();
@@ -23,46 +23,46 @@ router.get('/', async (req, res) => {
       where.location = { contains: location as string, mode: 'insensitive' };
     }
 
-    const [companies, total] = await Promise.all([
-      prisma.company.findMany({
-        where,
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          industry: true,
-          size: true,
-          location: true,
-          logo: true,
-          rating: true,
-          ratingCount: true,
-          _count: {
-            select: {
-              jobs: {
-                where: {
-                  status: 'PUBLISHED'
-                }
-              }
-            }
-          }
-        },
-        orderBy: [
-          { rating: 'desc' },
-          { name: 'asc' }
-        ],
-        skip: offset,
-        take: limitNum,
-      }),
-      prisma.company.count({ where })
-    ]);
+    // const [companies, total] = await Promise.all([
+    //   prisma.company.findMany({
+    //     where,
+    //     select: {
+    //       id: true,
+    //       name: true,
+    //       description: true,
+    //       industry: true,
+    //       size: true,
+    //       location: true,
+    //       logo: true,
+    //       rating: true,
+    //       ratingCount: true,
+    //       _count: {
+    //         select: {
+    //           jobs: {
+    //             where: {
+    //               status: 'PUBLISHED'
+    //             }
+    //           }
+    //         }
+    //       }
+    //     },
+    //     orderBy: [
+    //       { rating: 'desc' },
+    //       { name: 'asc' }
+    //     ],
+    //     skip: offset,
+    //     take: limitNum,
+    //   }),
+    //   prisma.company.count({ where })
+    // ]);
 
     res.json({
-      companies,
+      // companies,
       pagination: {
         page: pageNum,
         limit: limitNum,
-        total,
-        pages: Math.ceil(total / limitNum)
+        // total,
+        // pages: Math.ceil(total / limitNum)
       }
     });
   } catch (error) {
@@ -72,67 +72,67 @@ router.get('/', async (req, res) => {
 });
 
 // Get company by ID (public)
-router.get('/:id', async (req, res) => {
-  try {
-    const company = await prisma.company.findUnique({
-      where: { id: req.params.id },
-      include: {
-        jobs: {
-          where: {
-            status: 'PUBLISHED'
-          },
-          select: {
-            id: true,
-            title: true,
-            location: true,
-            employmentType: true,
-            salaryMin: true,
-            salaryMax: true,
-            isRemote: true,
-            isUrgent: true,
-            createdAt: true,
-            _count: {
-              select: {
-                applications: true
-              }
-            }
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 10
-        },
-        ratings: {
-          select: {
-            rating: true,
-            review: true,
-            category: true,
-            createdAt: true,
-            user: {
-              select: {
-                firstName: true,
-                lastName: true
-              }
-            }
-          },
-          where: {
-            review: {
-              not: null
-            }
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 5
-        }
-      }
-    });
+// router.get('/:id', async (req, res) => {
+//   try {
+//     const company = await prisma.company.findUnique({
+//       where: { id: req.params.id },
+//       include: {
+//         jobs: {
+//           where: {
+//             status: 'PUBLISHED'
+//           },
+//           select: {
+//             id: true,
+//             title: true,
+//             location: true,
+//             employmentType: true,
+//             salaryMin: true,
+//             salaryMax: true,
+//             isRemote: true,
+//             isUrgent: true,
+//             createdAt: true,
+//             _count: {
+//               select: {
+//                 applications: true
+//               }
+//             }
+//           },
+//           orderBy: { createdAt: 'desc' },
+//           take: 10
+//         },
+//         ratings: {
+//           select: {
+//             rating: true,
+//             review: true,
+//             category: true,
+//             createdAt: true,
+//             user: {
+//               select: {
+//                 firstName: true,
+//                 lastName: true
+//               }
+//             }
+//           },
+//           where: {
+//             review: {
+//               not: null
+//             }
+//           },
+//           orderBy: { createdAt: 'desc' },
+//           take: 5
+//         }
+//       }
+//     });
 
-    if (!company) {
-      return res.status(404).json({ error: 'Company not found' });
-    }
+//     if (!company) {
+//       return res.status(404).json({ error: 'Company not found' });
+//     }
 
-    res.json({ company });
-  } catch (error) {
-    logger.error('Get company error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+//     res.json({ company });
+//   } catch (error) {
+//     logger.error('Get company error:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
 
 export { router as companiesRouter };

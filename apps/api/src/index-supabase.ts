@@ -22,6 +22,7 @@ import { migrationCompleteRouter } from './routes/migration-complete';
 import { simpleMigrationRouter } from './routes/simple-migration';
 import { usernameFixRouter } from './routes/username-fix';
 import { testConnection } from './db/supabase';
+import routeHandlers from "./routes";
 
 // Load environment variables
 dotenv.config({ path: '.env' });
@@ -85,6 +86,7 @@ app.get('/health', async (req, res) => {
 });
 
 // API routes
+app.use('/api', routeHandlers);
 app.use('/api/auth', authRouter);
 app.use('/api/jobs', jobsRouter);
 app.use('/api/companies', companiesRouter);
@@ -96,6 +98,10 @@ app.use('/api/migration', migrationRouter);
 app.use('/api/migration-complete', migrationCompleteRouter);
 app.use('/api/simple-migration', simpleMigrationRouter);
 app.use('/api/username-fix', usernameFixRouter);
+
+app.get("/", (request, response) => {
+  response.send("Hello World");
+});
 
 // 404 handler
 app.use('*', (req, res) => {
